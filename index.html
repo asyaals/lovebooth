@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>LoveBooth • Atiş</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playwrite+DE+Grund:wght@200;300;400&family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --ink:#111;
+      --paper:#fff;
+      --muted:#666;
+      --hand:"Playwrite DE Grund", cursive;
+      --ui:"Inter", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    }
+    *{box-sizing:border-box}
+    body{ margin:0; background:var(--paper); color:var(--ink); font-family:var(--ui); }
+
+    .wrap{
+      width:min(1100px, 100%);
+      margin:0 auto;
+      padding:18px;
+      display:grid;
+      gap:14px;
+    }
+
+    .topbar{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+    .title{ margin:0; font-size:22px; font-weight:900; }
+    .subtitle{
+      margin:6px 0 0;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.35;
+    }
+
+    .controls{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    button{
+      border:2px solid var(--ink);
+      background:#fff;
+      color:var(--ink);
+      padding:10px 12px;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:900;
+      font-family:var(--ui);
+      transition:.12s transform, .12s background;
+    }
+    button.primary{ background:#111; color:#fff; }
+    button:hover{ background:#f6f6f6; }
+    button.primary:hover{ background:#000; }
+    button:active{ transform: translateY(1px); }
+    button:disabled{ opacity:.4; cursor:not-allowed; }
+
+    .stage{
+      position:relative;
+      border:2px solid rgba(0,0,0,.08);
+      border-radius:16px;
+      padding:16px;
+      background:#fff;
+    }
+
+    /* Booth görsel alanı */
+    .boothArea{
+      position:relative;
+      width:min(980px, 100%);
+      margin:0 auto;
+      border-radius:14px;
+      overflow:hidden;
+    }
+    .boothImg{
+      width:100%;
+      height:auto;
+      display:block;
+    }
+
+    /* 1) Başlangıçta şeridi gizlemek için “kapak”
+       Not: Bu koordinatlar çizime göre ayarlı. Gerekirse 1-2 tık oynatırız. */
+    .maskWindow{
+      position:absolute;
+      left: 18.5%;
+      top: 35.8%;
+      width: 39.5%;
+      height: 23.5%;
+      background:#fff;
+      border:3px solid #111;
+      border-radius:14px;
+      display:grid;
+      place-items:center;
+      color:rgba(0,0,0,.55);
+      font-weight:900;
+      font-size:14px;
+    }
+    .maskWindow.hide{ opacity:0; pointer-events:none; transition: opacity .2s ease; }
+
+    /* Enter butonu (çizimdeki enter yazısının üstüne oturacak şekilde) */
+    .enterOverlay{
+      position:absolute;
+      left: 66.2%;
+      top: 43.5%;
+      transform: translate(-50%, -50%);
+    }
+
+    /* 2) Şerit: Enter’dan sonra ORTAYA büyük gelsin */
+    .centerStrip{
+      position:fixed;
+      inset:0;
+      display:grid;
+      place-items:center;
+      background: rgba(255,255,255,.65);
+      backdrop-filter: blur(2px);
+      opacity:0;
+      pointer-events:none;
+      transition: opacity .25s ease;
+    }
+    .centerStrip.show{
+      opacity:1;
+      pointer-events:auto;
+    }
+    .stripCard{
+      width:min(420px, 92vw);
+      transform: translateY(18px) scale(.98);
+      opacity:0;
+      transition: transform .35s ease, opacity .25s ease;
+      filter: drop-shadow(0 18px 30px rgba(0,0,0,.25));
+    }
+    .centerStrip.show .stripCard{
+      transform: translateY(0) scale(1);
+      opacity:1;
+    }
+    .stripCard canvas{
+      width:100%;
+      height:auto;
+      display:block;
+      background:#fff;
+      border:3px solid #111;
+      border-radius:14px;
+    }
+    .stripActions{
+      display:flex;
+      gap:10px;
+      justify-content:center;
+      margin-top:10px;
+      flex-wrap:wrap;
+    }
+
+    /* Mesaj */
+    .note{
+      margin-top:12px;
+      border:2px solid #111;
+      border-radius:14px;
+      padding:14px;
+      background:#fff;
+    }
+    .note .hand{
+      font-family:var(--hand);
+      font-size:18px;
+      line-height:1.55;
+    }
+    .note .meta{
+      margin-top:8px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.35;
+    }
+
+    /* Kalpler */
+    .heartsFx{
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      overflow:hidden;
+    }
+    .fxHeart{
+      position:absolute;
+      font-size:18px;
+      opacity:0;
+      animation: floatUp 1.7s ease forwards;
+      filter: drop-shadow(0 10px 14px rgba(0,0,0,.18));
+    }
+    @keyframes floatUp{
+      0%{transform: translateY(12px) scale(.85); opacity:0}
+      12%{opacity:1}
+      70%{opacity:.95}
+      100%{transform: translateY(-170px) scale(1.15); opacity:0}
+    }
+
+    @media (max-width:560px){
+      .note .hand{ font-size:16px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <h1 class="title">LoveBooth</h1>
+        <p class="subtitle">
+          <b>Enter</b>’a basınca şerit ortaya gelecek ve görünür şekilde kalacak.
+          <br><span id="dateRange"></span> • <span id="daysTogether"></span>
+        </p>
+      </div>
+      <div class="controls">
+        <button id="resetBtn">Reset</button>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="boothArea">
+        <!-- Senin ürettiğimiz çizim: booth.png -->
+        <img class="boothImg" src="booth.png" alt="LoveBooth sketch" />
+
+        <!-- Şeridi başlangıçta gizleyen kapak (sayfa açılınca insan görünmesin diye) -->
+        <div class="maskWindow" id="maskWindow">Enter’a bas 💘</div>
+
+        <!-- Enter butonu -->
+        <div class="enterOverlay">
+          <button class="primary" id="enterBtn">enter ↵</button>
+        </div>
+      </div>
+
+      <div class="note">
+        <div class="hand" id="message">
+          Atiş… Sevgililer Günün kutlu olsun.<br>
+          19 Mart 2020’den beri kalbimin en güvenli yeri sensin.<br>
+          Her fotoğrafta bir anı var ama benim en sevdiğim şey: her gün yeniden <b>“biz”</b> olmak.<br>
+          Seni çok seviyorum. 💗
+        </div>
+        <div class="meta">Fotoğraflar: <b>photo1.jpg…photo4.jpg</b> (repo root)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ortaya gelen şerit katmanı -->
+  <div class="centerStrip" id="centerStrip" aria-hidden="true">
+    <div class="stripCard">
+      <canvas id="stripCanvas" width="900" height="1500"></canvas>
+      <div class="stripActions">
+        <button id="downloadBtn" disabled>⬇️ Şeridi indir</button>
+        <button id="closeBtn">Kapat</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="heartsFx" id="heartsFx"></div>
+
+<script>
+(() => {
+  const enterBtn = document.getElementById('enterBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const closeBtn = document.getElementById('closeBtn');
+  const downloadBtn = document.getElementById('downloadBtn');
+
+  const maskWindow = document.getElementById('maskWindow');
+  const centerStrip = document.getElementById('centerStrip');
+  const heartsFx = document.getElementById('heartsFx');
+
+  const dateRangeEl = document.getElementById('dateRange');
+  const daysTogetherEl = document.getElementById('daysTogether');
+
+  const canvas = document.getElementById('stripCanvas');
+  const ctx = canvas.getContext('2d');
+
+  const PHOTO_FILES = ["photo1.jpg","photo2.jpg","photo3.jpg","photo4.jpg"];
+
+  // Tarih aralığı + gün sayısı
+  function fmtTR(d){
+    const dd = String(d.getDate()).padStart(2,'0');
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const yy = d.getFullYear();
+    return `${dd}.${mm}.${yy}`;
+  }
+  const start = new Date(2020, 2, 19); // 19 Mart 2020 (ay 0-index!)
+  const today = new Date();
+  const ms = today.setHours(0,0,0,0) - start.getTime();
+  const days = Math.floor(ms / (1000*60*60*24));
+
+  dateRangeEl.textContent = `${fmtTR(new Date(2020,2,19))} — ${fmtTR(new Date())}`;
+  daysTogetherEl.textContent = `${days} gün`;
+
+  function popHearts(){
+    const emojis = ["💗","💖","💘","💞","💕"];
+    const rect = document.body.getBoundingClientRect();
+    for(let i=0;i<18;i++){
+      const h = document.createElement('div');
+      h.className = "fxHeart";
+      h.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+      h.style.left = (Math.random() * (rect.width - 20)) + "px";
+      h.style.top  = (rect.height - 40 + Math.random()*25) + "px";
+      h.style.animationDelay = (Math.random()*0.18) + "s";
+      h.style.fontSize = (16 + Math.random()*18) + "px";
+      heartsFx.appendChild(h);
+      h.addEventListener('animationend', ()=> h.remove());
+    }
+  }
+
+  function loadOneImage(src){
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("Yüklenemedi: " + src));
+      img.src = src;
+    });
+  }
+
+  async function loadImages(){
+    const imgs = [];
+    for(const f of PHOTO_FILES){
+      imgs.push(await loadOneImage(f));
+    }
+    return imgs;
+  }
+
+  function roundRect(x,y,w,h,r){
+    const rr = Math.min(r, w/2, h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+rr, y);
+    ctx.arcTo(x+w, y, x+w, y+h, rr);
+    ctx.arcTo(x+w, y+h, x, y+h, rr);
+    ctx.arcTo(x, y+h, x, y, rr);
+    ctx.arcTo(x, y, x+w, y);
+    ctx.closePath();
+  }
+
+  function drawCover(img, x, y, w, h){
+    const iw = img.width;
+    const ih = img.height;
+    const scale = Math.max(w/iw, h/ih);
+    const sw = w/scale;
+    const sh = h/scale;
+    const sx = (iw - sw)/2;
+    const sy = (ih - sh)/2;
+
+    ctx.save();
+    roundRect(x,y,w,h,22);
+    ctx.clip();
+    ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+    ctx.restore();
+  }
+
+  function drawStrip(images){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    const pad = 70;
+    const headerH = 170;
+    const footerH = 130;
+    const gap = 30;
+
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#111";
+    ctx.font = "900 62px Inter, system-ui";
+    ctx.fillText("ASYA ♥ ATIŞ", canvas.width/2, pad + 78);
+
+    ctx.fillStyle = "rgba(0,0,0,.70)";
+    ctx.font = "900 28px Inter, system-ui";
+    ctx.fillText(`LOVEBOOTH • 19.03.2020 — ${fmtTR(new Date())}`, canvas.width/2, pad + 124);
+
+    const frameW = canvas.width - pad*2;
+    const frameH = Math.floor((canvas.height - pad*2 - headerH - footerH - gap*3) / 4);
+    let y = pad + headerH;
+
+    for(let i=0;i<4;i++){
+      ctx.fillStyle = "rgba(0,0,0,.06)";
+      roundRect(pad, y, frameW, frameH, 26);
+      ctx.fill();
+      drawCover(images[i], pad+18, y+18, frameW-36, frameH-36);
+      y += frameH + gap;
+    }
+
+    ctx.fillStyle = "rgba(0,0,0,.55)";
+    ctx.font = "900 22px Inter, system-ui";
+    ctx.fillText(`${days} gün`, canvas.width/2, canvas.height - pad + 18);
+  }
+
+  async function reveal(){
+    popHearts();
+    maskWindow.textContent = "Çıktı geliyor… 💞";
+
+    try{
+      const imgs = await loadImages();
+      drawStrip(imgs);
+
+      // Başlangıçta çizimde görünen şeridi kapatmaya devam edebiliriz,
+      // ama istersen Enter'dan sonra da kapak kalsın diye kaldırmıyoruz.
+      // Yine de daha temiz dursun dersen: maskWindow.classList.add('hide');
+      // Ben şimdilik kapak KALSIN (çizimdeki olası şerit her zaman gizli).
+      // maskWindow.classList.add('hide');
+
+      centerStrip.classList.add('show');
+      downloadBtn.disabled = false;
+    }catch(err){
+      alert("Fotoğraflar yüklenemedi.\n\nphoto1.jpg…photo4.jpg aynı klasörde mi?\nHata: " + err.message);
+      maskWindow.textContent = "Enter’a bas 💘";
+    }
+  }
+
+  function closeStrip(){
+    centerStrip.classList.remove('show');
+  }
+
+  function resetAll(){
+    closeStrip();
+    downloadBtn.disabled = true;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    maskWindow.textContent = "Enter’a bas 💘";
+    // maskWindow.classList.remove('hide');
+  }
+
+  function downloadPNG(){
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL("image/png");
+    a.download = "lovebooth_photostrip.png";
+    a.click();
+  }
+
+  enterBtn.addEventListener('click', reveal);
+  closeBtn.addEventListener('click', closeStrip);
+  resetBtn.addEventListener('click', resetAll);
+  downloadBtn.addEventListener('click', downloadPNG);
+
+  // Arka plana tıklayınca kapansın
+  centerStrip.addEventListener('click', (e) => {
+    if(e.target === centerStrip) closeStrip();
+  });
+})();
+</script>
+</body>
+</html>
